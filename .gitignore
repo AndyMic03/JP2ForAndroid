@@ -3,6 +3,7 @@
 .hgtags
 
 .gradle
+.kotlin
 local.properties
 build
 captures

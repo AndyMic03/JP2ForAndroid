@@ -22,5 +22,9 @@ dependencyResolutionManagement {
     }
 }
 
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version("0.9.0")
+}
+
 include(":jp2-android", ":testapp")
 project(":jp2-android").projectDir = File("library")

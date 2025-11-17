@@ -1,8 +1,9 @@
 @file:Suppress("UnstableApiUsage")
 
 plugins {
-    id("com.android.application")
+    id("com.android.library")
     id("maven-publish")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
@@ -10,18 +11,21 @@ android {
     compileSdk {
         version = release(36)
     }
-    ndkVersion =  "29.0.14033849 rc4"
+    ndkVersion = "29.0.14206865"
+    lint.targetSdk = 36
 
     defaultConfig {
         minSdk =  21
-        targetSdk = 36
-        versionName = "1.0.3"
-        versionCode = 4
+        //versionName = "1.0.3"
+        //versionCode = 4
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                cppFlags.addAll(kotlin.collections.listOf())
+                cppFlags.addAll(listOf())
             }
+        }
+        ndk {
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
         }
     }
     buildTypes {
@@ -29,10 +33,21 @@ android {
             isMinifyEnabled = false
         }
     }
+    buildFeatures {
+        buildConfig = true
+    }
     externalNativeBuild {
         cmake {
-            file("CMakeLists.txt")
+            version = "4.1.2"
+            path = file("CMakeLists.txt")
         }
+    }
+    kotlin {
+        jvmToolchain(11)
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     publishing {
         singleVariant("release") {
@@ -45,7 +60,8 @@ android {
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation("androidx.annotation:annotation:1.1.0")
-    //testImplementation("junit:junit:4.13.1")
+    implementation("androidx.core:core-ktx:1.17.0")
+    testImplementation("junit:junit:4.13.1")
     androidTestImplementation("androidx.test.ext:junit:1.1.2")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.3.0")
 }

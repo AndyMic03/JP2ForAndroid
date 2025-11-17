@@ -9,22 +9,27 @@ if (keystorePropertiesFile.exists()) {
 
 plugins {
     id("com.android.application")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
-    namespace = "com.gemalto.openjpeg.test"
+    namespace = "com.gemalto.jp2.test"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
         minSdk =  21
-        targetSdk = 36
+        compileSdk {
+            version = release(36)
+        }
         versionName = "1.0"
         versionCode = 1
-        applicationId = "com.gemalto.openjpeg.test"
+        applicationId = "com.gemalto.jp2.test"
+        ndk {
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+        }
     }
-
 
     signingConfigs {
         create("release") {
@@ -43,7 +48,14 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
-
+    kotlin {
+        jvmToolchain(11)
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    ndkVersion = "29.0.14206865"
 }
 
 dependencies {
@@ -51,4 +63,5 @@ dependencies {
     implementation(project(":jp2-android"))
     implementation("androidx.appcompat:appcompat:1.2.0")
     implementation("androidx.constraintlayout:constraintlayout:2.0.4")
+    implementation("androidx.core:core-ktx:1.17.0")
 }
