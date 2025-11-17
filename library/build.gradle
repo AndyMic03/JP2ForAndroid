@@ -1,13 +1,13 @@
-apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
-apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'com.jfrog.bintray'
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+}
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 36
     defaultConfig {
-        minSdkVersion 14
-        targetSdkVersion 30
+        minSdkVersion 21
+        targetSdkVersion 36
         versionName "1.0.3"
         versionCode 4
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -27,7 +27,8 @@ android {
             path "CMakeLists.txt"
         }
     }
-    ndkVersion '22.0.7026061'
+    namespace = 'com.gemalto.jp2'
+    ndkVersion '29.0.14033849 rc4'
 }
 
 dependencies {
@@ -44,7 +45,7 @@ dependencies {
 //create a sources jar
 task sourceJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
-    classifier 'sources'
+    archiveClassifier.set('sources')
 }
 
 //publish to a local Maven repository with the sources jar and all dependencies
@@ -88,5 +89,3 @@ ext {
     licenseUrl = 'https://opensource.org/licenses/BSD-2-Clause'
     allLicenses = ["BSD-2-Clause"]
 }
-
-apply from: 'bintray.gradle'
