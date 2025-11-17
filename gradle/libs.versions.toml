@@ -1,0 +1,36 @@
+[versions]
+# Libraries
+core = "1.17.0"
+appcompat = "1.7.1"
+activity = "1.11.0"
+lifecycle = "2.9.4"  # Single version for all lifecycle libs
+coroutines = "1.10.2"
+constraintLayout = "2.2.1"
+material = "1.13.0"
+
+# Plugins
+agp = "8.13.1"
+kotlin = "2.2.21"
+
+[libraries]
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activity" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintLayout" }
+google-material = { module = "com.google.android.material:material", version.ref = "material" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-livedata = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-runtime = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+
+[bundles]
+lifecycle = [
+    "androidx-lifecycle-viewmodel",
+    "androidx-lifecycle-livedata",
+    "androidx-lifecycle-runtime",
+]

@@ -8,8 +8,8 @@ if (keystorePropertiesFile.exists()) {
 }
 
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -48,6 +48,9 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
+    buildFeatures {
+        viewBinding = true
+    }
     kotlin {
         jvmToolchain(11)
     }
@@ -59,9 +62,12 @@ android {
 }
 
 dependencies {
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(project(":jp2-android"))
-    implementation("androidx.appcompat:appcompat:1.2.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.0.4")
-    implementation("androidx.core:core-ktx:1.17.0")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.google.material)
+    implementation(libs.bundles.lifecycle)
 }
