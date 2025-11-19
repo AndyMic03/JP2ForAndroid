@@ -1,4 +1,4 @@
-package com.gemalto.jp2
+package com.andymic.jpeg2k
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -84,11 +84,11 @@ class Util(private val ctx: Context) {
 
     @Throws(Exception::class)
     fun loadAssetFile(name: String): ByteArray? {
-        ctx.resources.assets.open(name).use { `is` ->
-            val out = ByteArrayOutputStream(`is`.available())
+        ctx.resources.assets.open(name).use { inputStream ->
+            val out = ByteArrayOutputStream(inputStream.available())
             val buffer = ByteArray(8192)
             var count: Int
-            while ((`is`.read(buffer).also { count = it }) >= 0) {
+            while ((inputStream.read(buffer).also { count = it }) >= 0) {
                 out.write(buffer, 0, count)
             }
             return out.toByteArray()
@@ -102,11 +102,11 @@ class Util(private val ctx: Context) {
 
     @Throws(Exception::class)
     fun loadFile(name: String?): ByteArray? {
-        FileInputStream(name).use { `is` ->
-            val out = ByteArrayOutputStream(`is`.available())
+        FileInputStream(name).use { inputStream ->
+            val out = ByteArrayOutputStream(inputStream.available())
             val buffer = ByteArray(8192)
             var count: Int
-            while ((`is`.read(buffer).also { count = it }) >= 0) {
+            while ((inputStream.read(buffer).also { count = it }) >= 0) {
                 out.write(buffer, 0, count)
             }
             return out.toByteArray()
@@ -115,11 +115,11 @@ class Util(private val ctx: Context) {
 
     @Throws(Exception::class)
     fun loadAssetBitmap(name: String): Bitmap {
-        ctx.resources.assets.open(name).use { `is` ->
+        ctx.resources.assets.open(name).use { inputStream ->
             val opts = BitmapFactory.Options()
             opts.inPreferredConfig = Bitmap.Config.ARGB_8888
             opts.inPremultiplied = false
-            var bmp = BitmapFactory.decodeStream(`is`, null, opts)
+            var bmp = BitmapFactory.decodeStream(inputStream, null, opts)
             if (bmp!!.getConfig() != Bitmap.Config.ARGB_8888) {
                 //convert to ARGB_8888 for pixel comparison purposes
                 val pixels = IntArray(bmp.getWidth() * bmp.getHeight())
@@ -147,11 +147,11 @@ class Util(private val ctx: Context) {
     fun loadAssetRawPixels(name: String): IntArray {
         //raw bitmaps are stored by component in RGBA order (i.e.) first all R, then all G, then all B, then all A
         var data: ByteArray? = null
-        ctx.resources.assets.open(name).use { `is` ->
-            val out = ByteArrayOutputStream(`is`.available())
+        ctx.resources.assets.open(name).use { inputStream ->
+            val out = ByteArrayOutputStream(inputStream.available())
             val buffer = ByteArray(8192)
             var count: Int
-            while ((`is`.read(buffer).also { count = it }) >= 0) {
+            while ((inputStream.read(buffer).also { count = it }) >= 0) {
                 out.write(buffer, 0, count)
             }
             data = out.toByteArray()

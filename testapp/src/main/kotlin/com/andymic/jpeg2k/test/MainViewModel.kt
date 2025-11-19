@@ -1,4 +1,4 @@
-package com.gemalto.jp2.test
+package com.andymic.jpeg2k.test
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -6,7 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gemalto.jp2.JP2Decoder
+import com.andymic.jpeg2k.JP2Decoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -37,11 +37,11 @@ class MainViewModel : ViewModel() {
 
             // Run the blocking (I/O, decoding) code on the IO dispatcher
             val bitmap = withContext(Dispatchers.IO) {
-                var `in`: InputStream? = null
+                var inputStream: InputStream? = null
                 try {
-                    `in` = context.assets.open("balloon.jp2")
+                    inputStream = context.assets.open("balloon.jp2")
 
-                    val decoder = JP2Decoder(`in`)
+                    val decoder = JP2Decoder(inputStream)
                     val header = decoder.readHeader()
 
                     if (header == null) {
@@ -77,7 +77,7 @@ class MainViewModel : ViewModel() {
                     _logMessages.postValue("Error: ${e.message}")
                     null
                 } finally {
-                    close(`in`)
+                    close(inputStream)
                 }
             }
 

@@ -23,8 +23,10 @@ dependencyResolutionManagement {
 }
 
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version("0.9.0")
+    id("org.gradle.toolchains.foojay-resolver-convention") version ("0.9.0")
 }
 
-include(":jp2-android", ":testapp")
-project(":jp2-android").projectDir = File("library")
+rootProject.name = "JPEG2K"
+
+include(":jpeg2k", ":testapp")
+project(":jpeg2k").projectDir = File("library")

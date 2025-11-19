@@ -1,12 +1,14 @@
 // based on openjpeg-2.1.1/jni/openjpeg/src/bin/jp2/opj_decompress.c and opj_compress.c
 
 #include "opj_config.h"
-#include <jni.h> 
+#include <jni.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include "openjpeg.h"
+
 typedef unsigned int OPJ_BITFIELD;
+
 #include "event.h"
 #include "function_list.h"
 #include "thread.h"
@@ -34,15 +36,15 @@ extern "C" {
 /* position 45: "\xff\x52" */
 #define J2K_CODESTREAM_MAGIC "\xff\x4f\xff\x51"
 
-#define MIN(a,b) ((a) > (b) ? (b) : (a))
-#define MAX(a,b) ((a) < (b) ? (b) : (a))
+#define MIN(a, b) ((a) > (b) ? (b) : (a))
+#define MAX(a, b) ((a) < (b) ? (b) : (a))
 
 //stores decoded image data
 typedef struct image_data {
     jint width;
     jint height;
     jint hasAlpha; //0 = false; 1 = true
-    int* pixels;
+    int *pixels;
 } image_data_t;
 
 //stores decoded image header
@@ -62,15 +64,15 @@ typedef struct image_header {
 
 int get_file_format(const char *filename) {
     unsigned int i;
-    static const char *extension[] = {"j2k", "jp2", "j2c", "jpc" };
-    static const int format[] = { J2K_CFMT, JP2_CFMT, J2K_CFMT, J2K_CFMT };
-    const char * ext = strrchr(filename, '.');
+    static const char *extension[] = {"j2k", "jp2", "j2c", "jpc"};
+    static const int format[] = {J2K_CFMT, JP2_CFMT, J2K_CFMT, J2K_CFMT};
+    const char *ext = strrchr(filename, '.');
     if (ext == nullptr)
         return -1;
     ext++;
-    if(ext) {
-        for(i = 0; i < sizeof(format)/sizeof(*format); i++) {
-            if(strcasecmp(ext, extension[i]) == 0) {
+    if (ext) {
+        for (i = 0; i < sizeof(format) / sizeof(*format); i++) {
+            if (strcasecmp(ext, extension[i]) == 0) {
                 return format[i];
             }
         }
@@ -83,8 +85,7 @@ static int get_magic_format(char *buf) {
     int magic_format;
     if (memcmp(buf, JP2_RFC3745_MAGIC, 12) == 0 || memcmp(buf, JP2_MAGIC, 4) == 0) {
         magic_format = JP2_CFMT;
-    }
-    else if (memcmp(buf, J2K_CODESTREAM_MAGIC, 4) == 0) {
+    } else if (memcmp(buf, J2K_CODESTREAM_MAGIC, 4) == 0) {
         magic_format = J2K_CFMT;
     } else {
         return -1;
@@ -92,8 +93,7 @@ static int get_magic_format(char *buf) {
     return magic_format;
 }
 
-static int infile_format(const char *fname)
-{
+static int infile_format(const char *fname) {
     FILE *reader;
     const char *s, *magic_s;
     int ext_format, magic_format;
@@ -116,10 +116,9 @@ static int infile_format(const char *fname)
     }
 
 
-
     ext_format = get_file_format(fname);
 
-    magic_format = get_magic_format((char *)buf);
+    magic_format = get_magic_format((char *) buf);
     if (magic_format == JP2_CFMT) {
         magic_s = ".jp2";
     } else if (magic_format == J2K_CFMT) {
@@ -150,47 +149,44 @@ static int image_to_argb(opj_image_t *image, image_data_t *outImage) {
         LOGE("Unsupported number of components: %d\n", image->comps[0].prec);
         return 1;
     }
-    
+
     if (image->numcomps >= 3 && image->comps[0].dx == image->comps[1].dx
-        && image->comps[1].dx == image->comps[2].dx
-        && image->comps[0].dy == image->comps[1].dy
-        && image->comps[1].dy == image->comps[2].dy
-        && image->comps[0].prec == image->comps[1].prec
-        && image->comps[1].prec == image->comps[2].prec) {
-        
+            && image->comps[1].dx == image->comps[2].dx
+            && image->comps[0].dy == image->comps[1].dy
+            && image->comps[1].dy == image->comps[2].dy
+            && image->comps[0].prec == image->comps[1].prec
+            && image->comps[1].prec == image->comps[2].prec) {
+
         /* -->> -->> -->> -->>    
         24/32 bits color
         <<-- <<-- <<-- <<-- */
-        
-        w = image->comps[0].w;        
+
+        w = image->comps[0].w;
         h = image->comps[0].h;
-        
+
         outImage->pixels = (int *) malloc(sizeof(int) * w * h);
         outImage->height = h;
         outImage->width = w;
-        
+
         if (!outImage->pixels) {
             LOGE("Could not allocate %d bytes of memory.\n", w * h * sizeof(int));
             return 1;
         }
-        
+
         if (image->comps[0].prec > 8) {
             adjustR = image->comps[0].prec - 8;
             printf("RGB CONVERSION: Truncating component 0 from %d bits to 8 bits\n", image->comps[0].prec);
-        }
-        else 
+        } else
             adjustR = 0;
         if (image->comps[1].prec > 8) {
             adjustG = image->comps[1].prec - 8;
             printf("RGB CONVERSION: Truncating component 1 from %d bits to 8 bits\n", image->comps[1].prec);
-        }
-        else 
+        } else
             adjustG = 0;
         if (image->comps[2].prec > 8) {
             adjustB = image->comps[2].prec - 8;
             printf("RGB CONVERSION: Truncating component 2 from %d bits to 8 bits\n", image->comps[2].prec);
-        }
-        else 
+        } else
             adjustB = 0;
 
         if (image->numcomps >= 4) { //alpha
@@ -198,32 +194,31 @@ static int image_to_argb(opj_image_t *image, image_data_t *outImage) {
             if (image->comps[3].prec > 8) {
                 adjustA = image->comps[3].prec - 8;
                 printf("RGB CONVERSION: Truncating component 3 from %d bits to 8 bits\n", image->comps[3].prec);
-            }
-            else
+            } else
                 adjustA = 0;
         }
 
         for (i = 0; i < w * h; i++) {
             OPJ_UINT8 rc, gc, bc, ac;
             int r, g, b, a;
-                            
+
             r = image->comps[0].data[i];
             r += (image->comps[0].sgnd ? 1 << (image->comps[0].prec - 1) : 0);
             r = ((r >> adjustR)/*+((r >> (adjustR-1))%2)*/);
-            if(r > 255) r = 255; else if(r < 0) r = 0;
-            rc = (OPJ_UINT8)r;
+            if (r > 255) r = 255; else if (r < 0) r = 0;
+            rc = (OPJ_UINT8) r;
 
             g = image->comps[1].data[i];
             g += (image->comps[1].sgnd ? 1 << (image->comps[1].prec - 1) : 0);
             g = ((g >> adjustG)/*+((g >> (adjustG-1))%2)*/);
-            if(g > 255) g = 255; else if(g < 0) g = 0;
-            gc = (OPJ_UINT8)g;
+            if (g > 255) g = 255; else if (g < 0) g = 0;
+            gc = (OPJ_UINT8) g;
 
             b = image->comps[2].data[i];
             b += (image->comps[2].sgnd ? 1 << (image->comps[2].prec - 1) : 0);
             b = ((b >> adjustB)/*+((b >> (adjustB-1))%2)*/);
-            if(b > 255) b = 255; else if(b < 0) b = 0;
-            bc = (OPJ_UINT8)b;
+            if (b > 255) b = 255; else if (b < 0) b = 0;
+            bc = (OPJ_UINT8) b;
 
             if (outImage->hasAlpha) {
                 a = image->comps[3].data[i];
@@ -243,13 +238,13 @@ static int image_to_argb(opj_image_t *image, image_data_t *outImage) {
         8 bits non code (Gray scale)
         <<-- <<-- <<-- <<-- */
 
-        w = image->comps[0].w;        
+        w = image->comps[0].w;
         h = image->comps[0].h;
-        
+
         outImage->pixels = (int *) malloc(sizeof(int) * w * h);
         outImage->height = h;
         outImage->width = w;
-        
+
         if (!outImage->pixels) {
             LOGE("Could not allocate %d bytes of memory.\n", w * h * sizeof(int));
             return 1;
@@ -258,7 +253,7 @@ static int image_to_argb(opj_image_t *image, image_data_t *outImage) {
         if (image->comps[0].prec > 8) {
             adjustR = image->comps[0].prec - 8;
             printf("BMP CONVERSION: Truncating component 0 from %d bits to 8 bits\n", image->comps[0].prec);
-        }else 
+        } else
             adjustR = 0;
 
         if (image->numcomps >= 2) { //alpha
@@ -266,18 +261,17 @@ static int image_to_argb(opj_image_t *image, image_data_t *outImage) {
             if (image->comps[1].prec > 8) {
                 adjustA = image->comps[1].prec - 8;
                 printf("RGB CONVERSION: Truncating component 1 from %d bits to 8 bits\n", image->comps[1].prec);
-            }
-            else
+            } else
                 adjustA = 0;
         }
 
         for (i = 0; i < w * h; i++) {
             int r, a;
-            
+
             r = image->comps[0].data[i];
             r += (image->comps[0].sgnd ? 1 << (image->comps[0].prec - 1) : 0);
             r = ((r >> adjustR)/*+((r >> (adjustR-1))%2)*/);
-            if(r > 255) r = 255; else if(r < 0) r = 0;
+            if (r > 255) r = 255; else if (r < 0) r = 0;
 
             if (outImage->hasAlpha) {
                 a = image->comps[1].data[i];
@@ -299,28 +293,27 @@ static int image_to_argb(opj_image_t *image, image_data_t *outImage) {
 sample error callback expecting a FILE* client object
 */
 static void error_callback(const char *msg, void *client_data) {
-    (void)client_data;
+    (void) client_data;
     LOGE("[ERROR] %s", msg);
 }
 /**
 sample warning callback expecting a FILE* client object
 */
 static void warning_callback(const char *msg, void *client_data) {
-    (void)client_data;
+    (void) client_data;
     LOGW("[WARNING] %s", msg);
 }
 /**
 sample debug callback expecting no client object
 */
 static void info_callback(const char *msg, void *client_data) {
-    (void)client_data;
+    (void) client_data;
     LOGI("[INFO] %s", msg);
 }
 
-jint JNI_OnLoad(JavaVM* vm, void* reserved)
-{
-    JNIEnv* env;
-    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
+jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+    JNIEnv *env;
+    if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK) {
         return -1;
     }
 
@@ -330,24 +323,24 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
     return JNI_VERSION_1_6;
 }
 
-int readJ2KHeader(opj_codec_t* l_codec, int decode_format, image_header_t *outHeader) {
+int readJ2KHeader(opj_codec_t *l_codec, int decode_format, image_header_t *outHeader) {
     int compno;
-    opj_j2k* header;
+    opj_j2k *header;
 
     if (l_codec == nullptr) {
         LOGE("Codec is null");
         return EXIT_FAILURE;
     }
 
-    switch(decode_format) {
+    switch (decode_format) {
         case J2K_CFMT:    /* JPEG-2000 codestream */
         {
-            header = (opj_j2k *)((opj_codec_private_t *)l_codec)->m_codec;
+            header = (opj_j2k *) ((opj_codec_private_t *) l_codec)->m_codec;
             break;
         }
         case JP2_CFMT:    /* JPEG 2000 compressed image data */
         {
-            header = ((opj_jp2_t*)((opj_codec_private_t *)l_codec)->m_codec)->j2k;
+            header = ((opj_jp2_t *) ((opj_codec_private_t *) l_codec)->m_codec)->j2k;
             break;
         }
         default:
@@ -370,7 +363,7 @@ int readJ2KHeader(opj_codec_t* l_codec, int decode_format, image_header_t *outHe
         outHeader->height = MAX(outHeader->height, header->m_private_image->comps[i].h);
     }
     outHeader->hasAlpha = (header->m_private_image->numcomps == 2 || header->m_private_image->numcomps == 4);
-    opj_tcp_t * l_default_tile = header->m_specific_param.m_decoder.m_default_tcp;
+    opj_tcp_t *l_default_tile = header->m_specific_param.m_decoder.m_default_tcp;
     if (l_default_tile) {
         outHeader->numQualityLayers = l_default_tile->numlayers;
 
@@ -389,15 +382,15 @@ int readJ2KHeader(opj_codec_t* l_codec, int decode_format, image_header_t *outHe
 }
 
 int decodeJP2Header(opj_stream_t *l_stream, opj_dparameters_t *parameters, image_header_t *outHeader) {
-    opj_codec_t* l_codec = nullptr;                /* Handle to a decompressor */
-    opj_image_t* image = nullptr;
+    opj_codec_t *l_codec = nullptr;                /* Handle to a decompressor */
+    opj_image_t *image = nullptr;
 
     parameters->flags |= OPJ_DPARAMETERS_DUMP_FLAG;
 
     /* decode the JPEG2000 stream */
     /* ---------------------- */
 
-    switch(parameters->decod_format) {
+    switch (parameters->decod_format) {
         case J2K_CFMT:    /* JPEG-2000 codestream */
         {
             /* Get a decoder handle */
@@ -416,19 +409,19 @@ int decodeJP2Header(opj_stream_t *l_stream, opj_dparameters_t *parameters, image
     }
 
     /* catch events using our callbacks and give a local context */
-    opj_set_info_handler(l_codec, info_callback,nullptr);
-    opj_set_warning_handler(l_codec, warning_callback,nullptr);
-    opj_set_error_handler(l_codec, error_callback,nullptr);
+    opj_set_info_handler(l_codec, info_callback, nullptr);
+    opj_set_warning_handler(l_codec, warning_callback, nullptr);
+    opj_set_error_handler(l_codec, error_callback, nullptr);
 
     /* Setup the decoder decoding parameters using user parameters */
-    if ( !opj_setup_decoder(l_codec, parameters) ){
+    if (!opj_setup_decoder(l_codec, parameters)) {
         LOGE("ERROR -> j2k_dump: failed to setup the decoder\n");
         opj_destroy_codec(l_codec);
         return EXIT_FAILURE;
     }
 
     /* Read the main header of the codestream and if necessary the JP2 boxes*/
-    if(! opj_read_header(l_stream, l_codec, &image)){
+    if (!opj_read_header(l_stream, l_codec, &image)) {
         LOGE("ERROR -> opj_decompress: failed to read the header\n");
         opj_destroy_codec(l_codec);
         opj_image_destroy(image);
@@ -453,14 +446,14 @@ int decodeJP2Header(opj_stream_t *l_stream, opj_dparameters_t *parameters, image
 
 
 int decodeJP2Stream(opj_stream_t *l_stream, opj_dparameters_t *parameters, image_data_t *outImage, jint reduce) {
-    opj_codec_t* l_codec = nullptr;                /* Handle to a decompressor */
-    opj_image_t* image = nullptr;
+    opj_codec_t *l_codec = nullptr;                /* Handle to a decompressor */
+    opj_image_t *image = nullptr;
     image_header_t outHeader;
 
     /* decode the JPEG2000 stream */
     /* ---------------------- */
 
-    switch(parameters->decod_format) {
+    switch (parameters->decod_format) {
         case J2K_CFMT:    /* JPEG-2000 codestream */
         {
             /* Get a decoder handle */
@@ -478,20 +471,20 @@ int decodeJP2Stream(opj_stream_t *l_stream, opj_dparameters_t *parameters, image
             return EXIT_FAILURE;
     }
 
-    /* catch events using our callbacks and give a local context */        
-    opj_set_info_handler(l_codec, info_callback,nullptr);
-    opj_set_warning_handler(l_codec, warning_callback,nullptr);
-    opj_set_error_handler(l_codec, error_callback,nullptr);
+    /* catch events using our callbacks and give a local context */
+    opj_set_info_handler(l_codec, info_callback, nullptr);
+    opj_set_warning_handler(l_codec, warning_callback, nullptr);
+    opj_set_error_handler(l_codec, error_callback, nullptr);
 
     /* Setup the decoder decoding parameters using user parameters */
-    if ( !opj_setup_decoder(l_codec, parameters) ){
+    if (!opj_setup_decoder(l_codec, parameters)) {
         LOGE("ERROR -> j2k_dump: failed to setup the decoder\n");
         opj_destroy_codec(l_codec);
         return EXIT_FAILURE;
     }
 
     /* Read the main header of the codestream and if necessary the JP2 boxes*/
-    if(! opj_read_header(l_stream, l_codec, &image)){
+    if (!opj_read_header(l_stream, l_codec, &image)) {
         LOGE("ERROR -> opj_decompress: failed to read the header\n");
         opj_destroy_codec(l_codec);
         opj_image_destroy(image);
@@ -516,7 +509,7 @@ int decodeJP2Stream(opj_stream_t *l_stream, opj_dparameters_t *parameters, image
     }
 
     /* Setup the decoder again with fixed parameters */
-    if ( !opj_setup_decoder(l_codec, parameters) ){
+    if (!opj_setup_decoder(l_codec, parameters)) {
         LOGE("ERROR -> j2k_dump: failed to setup the decoder\n");
         opj_destroy_codec(l_codec);
         return EXIT_FAILURE;
@@ -525,7 +518,7 @@ int decodeJP2Stream(opj_stream_t *l_stream, opj_dparameters_t *parameters, image
 
     /* Optional if you want decode the entire image */
     if (!opj_set_decode_area(l_codec, image, parameters->DA_x0,
-            parameters->DA_y0, parameters->DA_x1, parameters->DA_y1)){
+            parameters->DA_y0, parameters->DA_x1, parameters->DA_y1)) {
         LOGE("ERROR -> opj_decompress: failed to set the decoded area\n");
         opj_destroy_codec(l_codec);
         opj_image_destroy(image);
@@ -533,7 +526,7 @@ int decodeJP2Stream(opj_stream_t *l_stream, opj_dparameters_t *parameters, image
     }
 
     /* Get the decoded image */
-    if (!(opj_decode(l_codec, l_stream, image) && opj_end_decompress(l_codec,    l_stream))) {
+    if (!(opj_decode(l_codec, l_stream, image) && opj_end_decompress(l_codec, l_stream))) {
         LOGE("ERROR -> opj_decompress: failed to decode image!\n");
         opj_destroy_codec(l_codec);
         opj_image_destroy(image);
@@ -542,8 +535,8 @@ int decodeJP2Stream(opj_stream_t *l_stream, opj_dparameters_t *parameters, image
 
     /* Convert the decoded image data to RGB with no subsampling */
     if (image->color_space != OPJ_CLRSPC_SYCC
-        && image->numcomps == 3 && image->comps[0].dx == image->comps[0].dy
-        && image->comps[1].dx != 1) {
+            && image->numcomps == 3 && image->comps[0].dx == image->comps[0].dy
+            && image->comps[1].dx != 1) {
         image->color_space = OPJ_CLRSPC_SYCC;
     } else if (image->numcomps <= 2) {
         image->color_space = OPJ_CLRSPC_GRAY;
@@ -569,7 +562,7 @@ int decodeJP2Stream(opj_stream_t *l_stream, opj_dparameters_t *parameters, image
         image->icc_profile_buf = nullptr;
         image->icc_profile_len = 0;
     }
-    
+
     //convert the image data to image_data_t which will be returned to Java
     image_to_argb(image, outImage);
 
@@ -580,35 +573,33 @@ int decodeJP2Stream(opj_stream_t *l_stream, opj_dparameters_t *parameters, image
 
     /* free image data structure */
     opj_image_destroy(image);
-    
+
     return EXIT_SUCCESS;
 }
 
 #define BYTE_ARRAY_SRC_CHUNK_LENGTH 4096
 typedef struct opj_byte_array_source {
-    char * data;
+    char *data;
     unsigned int offset;
     unsigned int length;
     unsigned int availableLength;
 } opj_byte_array_source;
 
-static OPJ_SIZE_T opj_read_from_byte_array (void * p_buffer, OPJ_SIZE_T p_nb_bytes, opj_byte_array_source * p_user_data)
-{
+static OPJ_SIZE_T opj_read_from_byte_array(void *p_buffer, OPJ_SIZE_T p_nb_bytes, opj_byte_array_source *p_user_data) {
     //LOGD("opj_read_from_byte_array started");
     size_t toRead = MIN(p_nb_bytes, p_user_data->length - p_user_data->offset);
     memcpy(p_buffer, p_user_data->data + p_user_data->offset, toRead);
     p_user_data->offset += toRead;
     //LOGD("opj_read_from_byte_array finished");
-    return toRead > 0 ? toRead : (OPJ_SIZE_T)-1;
+    return toRead > 0 ? toRead : (OPJ_SIZE_T) -1;
 }
 
-static OPJ_SIZE_T opj_write_from_byte_array (void * p_buffer, OPJ_SIZE_T p_nb_bytes, opj_byte_array_source * p_user_data)
-{
+static OPJ_SIZE_T opj_write_from_byte_array(void *p_buffer, OPJ_SIZE_T p_nb_bytes, opj_byte_array_source *p_user_data) {
     //LOGD("opj_write_from_byte_array started");
     while (p_nb_bytes + p_user_data->offset > p_user_data->availableLength) {
         //allocate bigger buffer
         //LOGD("opj_write_from_byte_array - realloc");
-        char * newBuffer = (char *)realloc(p_user_data->data, p_user_data->availableLength + BYTE_ARRAY_SRC_CHUNK_LENGTH);
+        char *newBuffer = (char *) realloc(p_user_data->data, p_user_data->availableLength + BYTE_ARRAY_SRC_CHUNK_LENGTH);
         //LOGD("opj_write_from_byte_array - realloc succeeded");
         if (newBuffer) {
             p_user_data->data = newBuffer;
@@ -624,13 +615,12 @@ static OPJ_SIZE_T opj_write_from_byte_array (void * p_buffer, OPJ_SIZE_T p_nb_by
     return p_nb_bytes;
 }
 
-static OPJ_OFF_T opj_skip_from_byte_array (OPJ_OFF_T p_nb_bytes, opj_byte_array_source * p_user_data)
-{
+static OPJ_OFF_T opj_skip_from_byte_array(OPJ_OFF_T p_nb_bytes, opj_byte_array_source *p_user_data) {
     //LOGD("opj_skip_from_byte_array started");
     while (p_nb_bytes + p_user_data->offset > p_user_data->availableLength) {
         //allocate bigger buffer
         //LOGD("opj_skip_from_byte_array - realloc");
-        char * newBuffer = (char *)realloc(p_user_data->data, p_user_data->availableLength + BYTE_ARRAY_SRC_CHUNK_LENGTH);
+        char *newBuffer = (char *) realloc(p_user_data->data, p_user_data->availableLength + BYTE_ARRAY_SRC_CHUNK_LENGTH);
         //LOGD("opj_skip_from_byte_array - realloc succeeded");
         if (newBuffer) {
             p_user_data->data = newBuffer;
@@ -641,20 +631,19 @@ static OPJ_OFF_T opj_skip_from_byte_array (OPJ_OFF_T p_nb_bytes, opj_byte_array_
             return -1;
         }
     }
-    
+
     p_user_data->offset += p_nb_bytes;
 
     //LOGD("opj_skip_from_byte_array finished successfully");
     return p_nb_bytes;
 }
 
-static OPJ_BOOL opj_seek_from_byte_array (OPJ_OFF_T p_nb_bytes, opj_byte_array_source * p_user_data)
-{
+static OPJ_BOOL opj_seek_from_byte_array(OPJ_OFF_T p_nb_bytes, opj_byte_array_source *p_user_data) {
     //LOGD("opj_seek_from_byte_array started");
     while (p_nb_bytes > p_user_data->availableLength) {
         //allocate bigger buffer
         //LOGD("opj_seek_from_byte_array - realloc");
-        char * newBuffer = (char *)realloc(p_user_data->data, p_user_data->availableLength + BYTE_ARRAY_SRC_CHUNK_LENGTH);
+        char *newBuffer = (char *) realloc(p_user_data->data, p_user_data->availableLength + BYTE_ARRAY_SRC_CHUNK_LENGTH);
         //LOGD("opj_seek_from_byte_array - realloc succeeded");
         if (newBuffer) {
             p_user_data->data = newBuffer;
@@ -665,30 +654,29 @@ static OPJ_BOOL opj_seek_from_byte_array (OPJ_OFF_T p_nb_bytes, opj_byte_array_s
             return OPJ_FALSE;
         }
     }
-    
+
     if (p_nb_bytes > p_user_data->length) {
         //LOGD("opj_seek_from_byte_array finished unsuccessfully");
         return OPJ_FALSE;
     }
-    
+
     p_user_data->offset = p_nb_bytes;
 
     //LOGD("opj_seek_from_byte_array finished successfully");
     return OPJ_TRUE;
 }
 
-opj_stream_t* OPJ_CALLCONV opj_stream_create_byte_array_stream (    char * data, unsigned int length,
-                                                                    OPJ_SIZE_T p_size, 
-                                                                    OPJ_BOOL p_is_read_stream)
-{
-    opj_stream_t* l_stream = nullptr;
+opj_stream_t *OPJ_CALLCONV opj_stream_create_byte_array_stream(char *data, unsigned int length,
+        OPJ_SIZE_T p_size,
+        OPJ_BOOL p_is_read_stream) {
+    opj_stream_t *l_stream = nullptr;
 
-    l_stream = opj_stream_create(p_size,p_is_read_stream);
-    if (! l_stream) {
+    l_stream = opj_stream_create(p_size, p_is_read_stream);
+    if (!l_stream) {
         return nullptr;
     }
-    
-    auto * data_src = (opj_byte_array_source *)malloc(sizeof(opj_byte_array_source));
+
+    auto *data_src = (opj_byte_array_source *) malloc(sizeof(opj_byte_array_source));
     data_src->data = data;
     data_src->offset = 0;
     data_src->length = length;
@@ -708,20 +696,20 @@ int setEncoderParameters(opj_cparameters_t *parameters, JNIEnv *env, jint fileFo
     int i;
     jfloat *bufferPtr;
     jsize dataLength;
-    
+
     /* set encoding parameters to default values */
     opj_set_default_encoder_parameters(parameters);
     //LOGD("1");
-    
+
     parameters->numresolution = numResolutions;
     parameters->cod_format = fileFormat;
-    
+
     if (compressionRates) {
         dataLength = env->GetArrayLength(compressionRates);
         if (dataLength > 100) dataLength = 100; //opj_cparameters supports maximum of 100 quality layers
         if (dataLength > 0) {
             bufferPtr = env->GetFloatArrayElements(compressionRates, nullptr);
-			parameters->tcp_numlayers = dataLength;
+            parameters->tcp_numlayers = dataLength;
             parameters->cp_disto_alloc = 1;
             for (i = 0; i < dataLength; i++) {
                 parameters->tcp_rates[i] = bufferPtr[i];
@@ -729,56 +717,56 @@ int setEncoderParameters(opj_cparameters_t *parameters, JNIEnv *env, jint fileFo
             env->ReleaseFloatArrayElements(compressionRates, bufferPtr, JNI_ABORT);
         }
     }
-    
+
     if (qualityValues) {
         dataLength = env->GetArrayLength(qualityValues);
         if (dataLength > 100) dataLength = 100; //opj_cparameters supports maximum of 100 quality layers
         if (dataLength > 0) {
             bufferPtr = env->GetFloatArrayElements(qualityValues, nullptr);
             parameters->cp_fixed_quality = 1;
-			parameters->tcp_numlayers = dataLength;
+            parameters->tcp_numlayers = dataLength;
             for (i = 0; i < dataLength; i++) {
                 parameters->tcp_distoratio[i] = bufferPtr[i];
             }
             env->ReleaseFloatArrayElements(qualityValues, bufferPtr, JNI_ABORT);
         }
     }
-    
-	/* check for possible errors */
-	if (parameters->cp_cinema){
-		if(parameters->tcp_numlayers > 1){
-			parameters->cp_rsiz = OPJ_STD_RSIZ;
+
+    /* check for possible errors */
+    if (parameters->cp_cinema) {
+        if (parameters->tcp_numlayers > 1) {
+            parameters->cp_rsiz = OPJ_STD_RSIZ;
             LOGW("Warning: DC profiles do not allow more than one quality layer. The codestream created will not be compliant with the DC profile");
-		}
-	}
+        }
+    }
 
-	if ((parameters->cp_disto_alloc || parameters->cp_fixed_alloc || parameters->cp_fixed_quality)
-		&& (!(parameters->cp_disto_alloc ^ parameters->cp_fixed_alloc ^ parameters->cp_fixed_quality))) {
-		LOGE("Error: options -r -q and -f cannot be used together !!");
-		return EXIT_FAILURE;
-	}				/* mod fixed_quality */
+    if ((parameters->cp_disto_alloc || parameters->cp_fixed_alloc || parameters->cp_fixed_quality)
+            && (!(parameters->cp_disto_alloc ^ parameters->cp_fixed_alloc ^ parameters->cp_fixed_quality))) {
+        LOGE("Error: options -r -q and -f cannot be used together !!");
+        return EXIT_FAILURE;
+    }                /* mod fixed_quality */
 
-	/* if no rate entered, lossless by default */
-	if (parameters->tcp_numlayers == 0) {
-		parameters->tcp_rates[0] = 0;	/* MOD antonin : losslessbug */
-		parameters->tcp_numlayers++;
-		parameters->cp_disto_alloc = 1;
-	}
+    /* if no rate entered, lossless by default */
+    if (parameters->tcp_numlayers == 0) {
+        parameters->tcp_rates[0] = 0;    /* MOD antonin : losslessbug */
+        parameters->tcp_numlayers++;
+        parameters->cp_disto_alloc = 1;
+    }
 
-	if((parameters->cp_tx0 > parameters->image_offset_x0) || (parameters->cp_ty0 > parameters->image_offset_y0)) {
-		LOGE("Error: Tile offset dimension is unnappropriate --> TX0(%d)<=IMG_X0(%d) TYO(%d)<=IMG_Y0(%d) \n",
-			parameters->cp_tx0, parameters->image_offset_x0, parameters->cp_ty0, parameters->image_offset_y0);
-		return EXIT_FAILURE;
-	}
+    if ((parameters->cp_tx0 > parameters->image_offset_x0) || (parameters->cp_ty0 > parameters->image_offset_y0)) {
+        LOGE("Error: Tile offset dimension is unnappropriate --> TX0(%d)<=IMG_X0(%d) TYO(%d)<=IMG_Y0(%d) \n",
+                parameters->cp_tx0, parameters->image_offset_x0, parameters->cp_ty0, parameters->image_offset_y0);
+        return EXIT_FAILURE;
+    }
 
-	for (i = 0; i < parameters->numpocs; i++) {
-		if (parameters->POC[i].prg == -1) {
-			LOGW("Unrecognized progression order in option -P (POC n %d) [LRCP, RLCP, RPCL, PCRL, CPRL] !!\n", i + 1);
-		}
-	}
+    for (i = 0; i < parameters->numpocs; i++) {
+        if (parameters->POC[i].prg == -1) {
+            LOGW("Unrecognized progression order in option -P (POC n %d) [LRCP, RLCP, RPCL, PCRL, CPRL] !!\n", i + 1);
+        }
+    }
 
     /* Create comment for codestream */
-    if(parameters->cp_comment == nullptr) {
+    if (parameters->cp_comment == nullptr) {
         const char comment[] = "Created by OpenJPEG version ";
         const size_t clen = strlen(comment);
         const char *version = opj_version();
@@ -787,18 +775,18 @@ int setEncoderParameters(opj_cparameters_t *parameters, JNIEnv *env, jint fileFo
         parameters->cp_comment = (char*)malloc(clen+strlen(version)+11);
         sprintf(parameters->cp_comment,"%s%s with JPWL", comment, version);
 #else
-        parameters->cp_comment = (char*)malloc(clen+strlen(version)+1);
-        sprintf(parameters->cp_comment,"%s%s", comment, version);
+        parameters->cp_comment = (char *) malloc(clen + strlen(version) + 1);
+        sprintf(parameters->cp_comment, "%s%s", comment, version);
 #endif
 /* <<UniPG */
     }
     //LOGD("2");
-    
-	return EXIT_SUCCESS;
+
+    return EXIT_SUCCESS;
 }
 
 //convert raw bitmap pixels to opj_image_t structure
-opj_image_t * getImage(JNIEnv *env, jintArray pixels, jboolean hasAlpha, jint width, jint height, opj_cparameters_t * parameters) {
+opj_image_t *getImage(JNIEnv *env, jintArray pixels, jboolean hasAlpha, jint width, jint height, opj_cparameters_t *parameters) {
     opj_image_t *image = nullptr;
     int i;
     jint *bufferPtr;
@@ -806,34 +794,34 @@ opj_image_t * getImage(JNIEnv *env, jintArray pixels, jboolean hasAlpha, jint wi
     int numcomps = hasAlpha ? 4 : 3;
     OPJ_COLOR_SPACE color_space;
     opj_image_cmptparm_t cmptparm[numcomps];    /* maximum of 3 components */
-    
+
     color_space = OPJ_CLRSPC_SRGB;
     /* initialize image components */
     memset(&cmptparm[0], 0, numcomps * sizeof(opj_image_cmptparm_t));
-    for(i = 0; i < numcomps; i++) {
+    for (i = 0; i < numcomps; i++) {
         cmptparm[i].prec = 8;
         cmptparm[i].bpp = 8;
         cmptparm[i].sgnd = 0;
         cmptparm[i].dx = parameters->subsampling_dx;
         cmptparm[i].dy = parameters->subsampling_dy;
-        cmptparm[i].w = (int)width;
-        cmptparm[i].h = (int)height;
+        cmptparm[i].w = (int) width;
+        cmptparm[i].h = (int) height;
     }
-    
+
     /* create the image */
     image = opj_image_create(numcomps, &cmptparm[0], color_space);
     if (!image) {
         LOGE("could not create image data structure");
-		return nullptr;
+        return nullptr;
     }
     //LOGD("3");
-    
+
     /* set image offset and reference grid */
     image->x0 = parameters->image_offset_x0;
     image->y0 = parameters->image_offset_y0;
-    image->x1 =    !image->x0 ? (width - 1) * parameters->subsampling_dx + 1 : image->x0 + (width - 1) * parameters->subsampling_dx + 1;
-    image->y1 =    !image->y0 ? (height - 1) * parameters->subsampling_dy + 1 : image->y0 + (height - 1) * parameters->subsampling_dy + 1;
-    
+    image->x1 = !image->x0 ? (width - 1) * parameters->subsampling_dx + 1 : image->x0 + (width - 1) * parameters->subsampling_dx + 1;
+    image->y1 = !image->y0 ? (height - 1) * parameters->subsampling_dy + 1 : image->y0 + (height - 1) * parameters->subsampling_dy + 1;
+
     //LOGD("4");
 
     //copy bytes from java to the image structure
@@ -841,31 +829,31 @@ opj_image_t * getImage(JNIEnv *env, jintArray pixels, jboolean hasAlpha, jint wi
     bufferPtr = env->GetIntArrayElements(pixels, nullptr);
     for (i = 0; i < width * height; i++) {
         image->comps[0].data[i] = (bufferPtr[i] >> 16) & 0xFF;    /* R */
-        image->comps[1].data[i] = (bufferPtr[i] >>  8) & 0xFF;    /* G */
-        image->comps[2].data[i] = (bufferPtr[i]      ) & 0xFF;    /* B */
-        if (hasAlpha) image->comps[3].data[i] = (bufferPtr[i] >> 24 ) & 0xFF; /* A */
+        image->comps[1].data[i] = (bufferPtr[i] >> 8) & 0xFF;    /* G */
+        image->comps[2].data[i] = (bufferPtr[i]) & 0xFF;    /* B */
+        if (hasAlpha) image->comps[3].data[i] = (bufferPtr[i] >> 24) & 0xFF; /* A */
     }
     env->ReleaseIntArrayElements(pixels, bufferPtr, JNI_ABORT);
     //LOGD("5");
-    
+
     return image;
 }
 
 //encode a opj_image_t (prepared from the raw bitmap data) into a JPEG-2000 byte array
-int encodeJP2(opj_cparameters_t *parameters, opj_image_t *image, opj_byte_array_source ** outByteArray) {
+int encodeJP2(opj_cparameters_t *parameters, opj_image_t *image, opj_byte_array_source **outByteArray) {
     int i, j;
-    opj_stream_private_t * l_stream = nullptr;
-	opj_codec_t* l_codec = nullptr;
-    opj_byte_array_source * jp2data = nullptr;
-	OPJ_BOOL bSuccess;
-    
+    opj_stream_private_t *l_stream = nullptr;
+    opj_codec_t *l_codec = nullptr;
+    opj_byte_array_source *jp2data = nullptr;
+    OPJ_BOOL bSuccess;
+
     /* Decide if MCT should be used */
     parameters->tcp_mct = image->numcomps == 3 ? 1 : 0;
 
     /* encode the destination image */
     /* ---------------------------- */
 
-    switch(parameters->cod_format) {
+    switch (parameters->cod_format) {
         case J2K_CFMT:    /* JPEG-2000 codestream */
         {
             /* Get a decoder handle */
@@ -884,44 +872,44 @@ int encodeJP2(opj_cparameters_t *parameters, opj_image_t *image, opj_byte_array_
             return EXIT_FAILURE;
     }
     //LOGD("6");
-    
-    /* catch events using our callbacks and give a local context */        
-    opj_set_info_handler(l_codec, info_callback,nullptr);
-    opj_set_warning_handler(l_codec, warning_callback,nullptr);
-    opj_set_error_handler(l_codec, error_callback,nullptr);
+
+    /* catch events using our callbacks and give a local context */
+    opj_set_info_handler(l_codec, info_callback, nullptr);
+    opj_set_warning_handler(l_codec, warning_callback, nullptr);
+    opj_set_error_handler(l_codec, error_callback, nullptr);
 
     opj_setup_encoder(l_codec, parameters, image);
     //LOGD("7");
-    
+
     /* open a byte stream for writing and allocate memory for all tiles */
     if (parameters->outfile[0] != 0) {
-		/* open a byte stream for writing and allocate memory for all tiles */
-		l_stream = (opj_stream_private_t *)opj_stream_create_default_file_stream(parameters->outfile, OPJ_FALSE);
+        /* open a byte stream for writing and allocate memory for all tiles */
+        l_stream = (opj_stream_private_t *) opj_stream_create_default_file_stream(parameters->outfile, OPJ_FALSE);
     } else {
-        l_stream = (opj_stream_private_t *)opj_stream_create_byte_array_stream(nullptr, 0, OPJ_J2K_STREAM_CHUNK_SIZE, OPJ_FALSE);
-        jp2data = (opj_byte_array_source *)l_stream->m_user_data;
+        l_stream = (opj_stream_private_t *) opj_stream_create_byte_array_stream(nullptr, 0, OPJ_J2K_STREAM_CHUNK_SIZE, OPJ_FALSE);
+        jp2data = (opj_byte_array_source *) l_stream->m_user_data;
     }
-    if (! l_stream){
+    if (!l_stream) {
         opj_destroy_codec(l_codec);
         opj_image_destroy(image);
         return EXIT_FAILURE;
     }
     //LOGD("8");
-    
+
     /* encode the image */
-    bSuccess = opj_start_compress(l_codec,image,(opj_stream_t*)l_stream);
-    if (!bSuccess)  {
+    bSuccess = opj_start_compress(l_codec, image, (opj_stream_t *) l_stream);
+    if (!bSuccess) {
         LOGE("failed to encode image: opj_start_compress");
     } else {
         //LOGD("9");
-        
-        bSuccess = bSuccess && opj_encode(l_codec, (opj_stream_t*)l_stream);
-        if (!bSuccess)  {
+
+        bSuccess = bSuccess && opj_encode(l_codec, (opj_stream_t *) l_stream);
+        if (!bSuccess) {
             LOGE("failed to encode image: opj_encode");
         } else {
             //LOGD("10");
-            bSuccess = bSuccess && opj_end_compress(l_codec, (opj_stream_t*)l_stream);
-            if (!bSuccess)  {
+            bSuccess = bSuccess && opj_end_compress(l_codec, (opj_stream_t *) l_stream);
+            if (!bSuccess) {
                 LOGE("failed to encode image: opj_end_compress");
             } else {
                 LOGI("Generated JPEG2000 data");
@@ -931,9 +919,9 @@ int encodeJP2(opj_cparameters_t *parameters, opj_image_t *image, opj_byte_array_
     //LOGD("11");
 
     /* close and free the byte stream */
-    opj_stream_destroy((opj_stream_t*)l_stream);
+    opj_stream_destroy((opj_stream_t *) l_stream);
     //LOGD("12");
-    
+
     /* free remaining compression structures */
     opj_destroy_codec(l_codec);
     //LOGD("13");
@@ -941,8 +929,8 @@ int encodeJP2(opj_cparameters_t *parameters, opj_image_t *image, opj_byte_array_
     /* free image data */
     opj_image_destroy(image);
     //LOGD("14");
-    
-    if (!bSuccess)  {
+
+    if (!bSuccess) {
         if (jp2data) {
             free(jp2data->data);
             free(jp2data);
@@ -955,30 +943,30 @@ int encodeJP2(opj_cparameters_t *parameters, opj_image_t *image, opj_byte_array_
 }
 
 //encode a raw bitmap into JPEG-2000, return the result in a byte array
-JNIEXPORT jbyteArray JNICALL Java_com_gemalto_jp2_JP2Encoder_00024Companion_encodeJP2ByteArray(JNIEnv *env, jobject thiz, jintArray pixels, jboolean hasAlpha, jint width, jint height,
-                                                                             jint fileFormat, jint numResolutions, jfloatArray compressionRates, jfloatArray qualityValues) {
-    opj_byte_array_source * jp2data = nullptr;
+JNIEXPORT jbyteArray JNICALL Java_com_andymic_jpeg2k_JP2Encoder_00024Companion_encodeJP2ByteArray(JNIEnv *env, jobject thiz, jintArray pixels, jboolean hasAlpha, jint width, jint height,
+        jint fileFormat, jint numResolutions, jfloatArray compressionRates, jfloatArray qualityValues) {
+    opj_byte_array_source *jp2data = nullptr;
     opj_cparameters_t parameters;    /* compression parameters */
     opj_image_t *image = nullptr;
-    
+
     if (setEncoderParameters(&parameters, env, fileFormat, numResolutions, compressionRates, qualityValues) != EXIT_SUCCESS) {
         return nullptr;
     }
     parameters.outfile[0] = 0;
-    
+
     image = getImage(env, pixels, hasAlpha, width, height, &parameters);
     if (!image) {
         return nullptr;
     }
-    
+
     if (encodeJP2(&parameters, image, &jp2data) != EXIT_SUCCESS) {
         LOGE("Error encoding JP2 data");
         return nullptr;
     }
-    
+
     jbyteArray ret = env->NewByteArray(jp2data->length);
     //LOGD("16, jp2data->data = %d, jp2data->offset = %d, jp2data->length = %d, jp2data->availableLength = %d", jp2data->data, jp2data->offset, jp2data->length, jp2data->availableLength);
-    env->SetByteArrayRegion(ret, 0, jp2data->length, (jbyte *)jp2data->data);
+    env->SetByteArrayRegion(ret, 0, jp2data->length, (jbyte *) jp2data->data);
     //LOGD("17");
     if (parameters.cp_comment != nullptr) {
         free(parameters.cp_comment);
@@ -989,25 +977,25 @@ JNIEXPORT jbyteArray JNICALL Java_com_gemalto_jp2_JP2Encoder_00024Companion_enco
 }
 
 //encode a raw bitmap into JPEG-2000, store the result into a file, return success/failure
-JNIEXPORT jint JNICALL Java_com_gemalto_jp2_JP2Encoder_00024Companion_encodeJP2File(JNIEnv *env, jobject thiz, jstring fileName, jintArray pixels, jboolean hasAlpha, jint width, jint height,
-                                                                        jint fileFormat, jint numResolutions, jfloatArray compressionRates, jfloatArray qualityValues) {
+JNIEXPORT jint JNICALL Java_com_andymic_jpeg2k_JP2Encoder_00024Companion_encodeJP2File(JNIEnv *env, jobject thiz, jstring fileName, jintArray pixels, jboolean hasAlpha, jint width, jint height,
+        jint fileFormat, jint numResolutions, jfloatArray compressionRates, jfloatArray qualityValues) {
     opj_cparameters_t parameters;    /* compression parameters */
     opj_image_t *image = nullptr;
     const char *c_file;
-    
+
     if (setEncoderParameters(&parameters, env, fileFormat, numResolutions, compressionRates, qualityValues) != EXIT_SUCCESS) {
         return EXIT_FAILURE;
     }
-    
+
     c_file = env->GetStringUTFChars(fileName, nullptr);
     strcpy(parameters.outfile, c_file);
     env->ReleaseStringUTFChars(fileName, c_file);
-    
+
     image = getImage(env, pixels, hasAlpha, width, height, &parameters);
     if (!image) {
         return EXIT_FAILURE;
     }
-    
+
     return encodeJP2(&parameters, image, nullptr);
 }
 
@@ -1015,7 +1003,7 @@ JNIEXPORT jint JNICALL Java_com_gemalto_jp2_JP2Encoder_00024Companion_encodeJP2F
 jintArray prepareReturnData(JNIEnv *env, image_data_t *outImage) {
     //prepare return data: first three integers in the array are width, height, hasAlpha, then image pixels
     jintArray ret = env->NewIntArray(outImage->width * outImage->height + 3);
-    env->SetIntArrayRegion(ret, 0, 3, (jint*)outImage);
+    env->SetIntArrayRegion(ret, 0, 3, (jint *) outImage);
     env->SetIntArrayRegion(ret, 3, outImage->width * outImage->height, outImage->pixels);
     free(outImage->pixels);
     outImage->pixels = nullptr;
@@ -1027,12 +1015,12 @@ jintArray prepareReturnHeaderData(JNIEnv *env, image_header_t *outHeader) {
     //prepare return data: first three integers in the array are width, height, hasAlpha, then image pixels
     int length = sizeof(image_header_t) / sizeof(jint);
     jintArray ret = env->NewIntArray(length);
-    env->SetIntArrayRegion(ret, 0, length, (jint*)outHeader);
+    env->SetIntArrayRegion(ret, 0, length, (jint *) outHeader);
     return ret;
 }
 
 //decode a JPEG-2000 encoded file, return in 32-bit raw RGBA pixels
-JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_decodeJP2File(JNIEnv *env, jobject thiz, jstring fileName, jint reduce, jint layers) {
+JNIEXPORT jintArray JNICALL Java_com_andymic_jpeg2k_JP2Decoder_00024Companion_decodeJP2File(JNIEnv *env, jobject thiz, jstring fileName, jint reduce, jint layers) {
     opj_stream_t *l_stream = nullptr;                /* Stream */
     opj_dparameters_t parameters;            /* decompression parameters */
     image_data_t outImage; //output data
@@ -1046,11 +1034,11 @@ JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_decod
 
     /* set decoding parameters to default values */
     opj_set_default_decoder_parameters(&parameters);
-    
+
     const char *c_file = env->GetStringUTFChars(fileName, nullptr);
     strcpy(parameters.infile, c_file);
     env->ReleaseStringUTFChars(fileName, c_file);
-    
+
     parameters.decod_format = infile_format(parameters.infile);
     parameters.cp_layer = layers;
     //We don't set the reduce parameter yet, because if it's too high, it would throw an error.
@@ -1058,16 +1046,16 @@ JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_decod
 
     /* read the input file and put it in memory */
     /* ---------------------------------------- */
-    l_stream = opj_stream_create_default_file_stream(parameters.infile,1);
-    if (!l_stream){
+    l_stream = opj_stream_create_default_file_stream(parameters.infile, 1);
+    if (!l_stream) {
         LOGE("ERROR -> failed to create the stream from the file\n");
         return nullptr;
     }
-    
+
     if (decodeJP2Stream(l_stream, &parameters, &outImage, reduce) == EXIT_SUCCESS) {
         ret = prepareReturnData(env, &outImage);
     }
-    
+
     /* Close the byte stream */
     opj_stream_destroy(l_stream);
 
@@ -1075,13 +1063,13 @@ JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_decod
 }
 
 //decode a JPEG-2000 encoded byte array, return in 32-bit raw RGBA pixels
-JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_decodeJP2ByteArray(JNIEnv *env, jobject thiz, jbyteArray data, jint reduce, jint layers) {
+JNIEXPORT jintArray JNICALL Java_com_andymic_jpeg2k_JP2Decoder_00024Companion_decodeJP2ByteArray(JNIEnv *env, jobject thiz, jbyteArray data, jint reduce, jint layers) {
     opj_stream_t *l_stream = nullptr;                /* Stream */
     opj_dparameters_t parameters;            /* decompression parameters */
     char *imgData;
     jbyte *bufferPtr;
     jsize dataLength;
-    opj_byte_array_source * streamData = nullptr;
+    opj_byte_array_source *streamData = nullptr;
     image_data_t outImage; //output data
     jintArray ret = nullptr;
 
@@ -1097,29 +1085,29 @@ JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_decod
     //copy bytes from java
     dataLength = env->GetArrayLength(data);
     bufferPtr = env->GetByteArrayElements(data, nullptr);
-    imgData = (char *)malloc(dataLength * sizeof(char));
+    imgData = (char *) malloc(dataLength * sizeof(char));
     memcpy(imgData, bufferPtr, dataLength);
     env->ReleaseByteArrayElements(data, bufferPtr, JNI_ABORT);
-    
-    
+
+
     parameters.decod_format = get_magic_format(imgData);
     parameters.cp_layer = layers;
     //We don't set the reduce parameter yet, because if it's too high, it would throw an error.
     //We will set it after we read the image header and find out actual number of resolutions.
 
-    l_stream = opj_stream_create_byte_array_stream(imgData,dataLength,OPJ_J2K_STREAM_CHUNK_SIZE,1);
-    if (!l_stream){
+    l_stream = opj_stream_create_byte_array_stream(imgData, dataLength, OPJ_J2K_STREAM_CHUNK_SIZE, 1);
+    if (!l_stream) {
         LOGE("ERROR -> failed to create the stream from the byte array");
         free(imgData);
         return nullptr;
     }
-    
-    streamData = (opj_byte_array_source *)((opj_stream_private_t *)l_stream)->m_user_data;
-    
+
+    streamData = (opj_byte_array_source *) ((opj_stream_private_t *) l_stream)->m_user_data;
+
     if (decodeJP2Stream(l_stream, &parameters, &outImage, reduce) == EXIT_SUCCESS) {
         ret = prepareReturnData(env, &outImage);
     }
-    
+
     /* Close the byte stream */
     opj_stream_destroy(l_stream);
     free(streamData->data); //this is where the imgData is stored now
@@ -1129,7 +1117,7 @@ JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_decod
 }
 
 //read meta-data information from a JPEG-2000 encoded file, return in an integer array (image_header_t representation)
-JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_readJP2HeaderFile(JNIEnv *env, jobject thiz, jstring fileName) {
+JNIEXPORT jintArray JNICALL Java_com_andymic_jpeg2k_JP2Decoder_00024Companion_readJP2HeaderFile(JNIEnv *env, jobject thiz, jstring fileName) {
     opj_stream_t *l_stream = nullptr;                /* Stream */
     opj_dparameters_t parameters;            /* decompression parameters */
     image_header_t outHeader; //output data
@@ -1153,8 +1141,8 @@ JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_readJ
 
     /* read the input file and put it in memory */
     /* ---------------------------------------- */
-    l_stream = opj_stream_create_default_file_stream(parameters.infile,1);
-    if (!l_stream){
+    l_stream = opj_stream_create_default_file_stream(parameters.infile, 1);
+    if (!l_stream) {
         LOGE("ERROR -> failed to create the stream from the file\n");
         return nullptr;
     }
@@ -1170,13 +1158,13 @@ JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_readJ
 }
 
 //read meta-data information from a JPEG-2000 encoded byte array, return in an integer array (image_header_t representation)
-JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_readJP2HeaderByteArray(JNIEnv *env, jobject thiz, jbyteArray data) {
+JNIEXPORT jintArray JNICALL Java_com_andymic_jpeg2k_JP2Decoder_00024Companion_readJP2HeaderByteArray(JNIEnv *env, jobject thiz, jbyteArray data) {
     opj_stream_t *l_stream = nullptr;                /* Stream */
     opj_dparameters_t parameters;            /* decompression parameters */
     char *imgData;
     jbyte *bufferPtr;
     jsize dataLength;
-    opj_byte_array_source * streamData = nullptr;
+    opj_byte_array_source *streamData = nullptr;
     image_header_t outHeader; //output data
     jintArray ret = nullptr;
 
@@ -1193,21 +1181,21 @@ JNIEXPORT jintArray JNICALL Java_com_gemalto_jp2_JP2Decoder_00024Companion_readJ
     //copy bytes from java
     dataLength = env->GetArrayLength(data);
     bufferPtr = env->GetByteArrayElements(data, nullptr);
-    imgData = (char *)malloc(dataLength * sizeof(char));
+    imgData = (char *) malloc(dataLength * sizeof(char));
     memcpy(imgData, bufferPtr, dataLength);
     env->ReleaseByteArrayElements(data, bufferPtr, JNI_ABORT);
 
 
     parameters.decod_format = get_magic_format(imgData);
 
-    l_stream = opj_stream_create_byte_array_stream(imgData,dataLength,OPJ_J2K_STREAM_CHUNK_SIZE,1);
-    if (!l_stream){
+    l_stream = opj_stream_create_byte_array_stream(imgData, dataLength, OPJ_J2K_STREAM_CHUNK_SIZE, 1);
+    if (!l_stream) {
         LOGE("ERROR -> failed to create the stream from the byte array");
         free(imgData);
         return nullptr;
     }
 
-    streamData = (opj_byte_array_source *)((opj_stream_private_t *)l_stream)->m_user_data;
+    streamData = (opj_byte_array_source *) ((opj_stream_private_t *) l_stream)->m_user_data;
 
     if (decodeJP2Header(l_stream, &parameters, &outHeader) == EXIT_SUCCESS) {
         ret = prepareReturnHeaderData(env, &outHeader);

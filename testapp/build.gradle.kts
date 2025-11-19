@@ -1,5 +1,5 @@
-import java.util.Properties
 import java.io.FileInputStream
+import java.util.Properties
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
@@ -13,19 +13,19 @@ plugins {
 }
 
 android {
-    namespace = "com.gemalto.jp2.test"
+    namespace = "com.andymic.jpeg2k.test"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        minSdk =  21
+        minSdk = 21
         compileSdk {
             version = release(36)
         }
         versionName = "1.0"
         versionCode = 1
-        applicationId = "com.gemalto.jp2.test"
+        applicationId = "com.andymic.jpeg2k.test"
         ndk {
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
         }
@@ -62,7 +62,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":jp2-android"))
+    implementation(project(":jpeg2k"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity.ktx)

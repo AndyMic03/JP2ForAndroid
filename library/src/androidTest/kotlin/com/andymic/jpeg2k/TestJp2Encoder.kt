@@ -1,10 +1,10 @@
-package com.gemalto.jp2
+package com.andymic.jpeg2k
 
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.gemalto.jp2.JP2Decoder.Companion.isJPEG2000
+import com.andymic.jpeg2k.JP2Decoder.Companion.isJPEG2000
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test

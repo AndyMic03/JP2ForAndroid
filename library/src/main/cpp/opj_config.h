@@ -1,7 +1,7 @@
 #ifndef OPJ_CONFIG_H
 #define OPJ_CONFIG_H
 
-#define OPJ_HAVE_STDINT_H 		1
+#define OPJ_HAVE_STDINT_H        1
 
 /*--------------------------------------------------------------------------*/
 /* OpenJPEG Versioning                                                      */

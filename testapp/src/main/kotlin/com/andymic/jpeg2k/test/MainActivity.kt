@@ -1,4 +1,4 @@
-package com.gemalto.jp2.test
+package com.andymic.jpeg2k.test
 
 import android.os.Bundle
 import android.util.Log
@@ -6,7 +6,7 @@ import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
-import com.gemalto.jp2.test.databinding.ActivityMainBinding
+import com.andymic.jpeg2k.test.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 

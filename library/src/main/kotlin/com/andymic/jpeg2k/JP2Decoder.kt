@@ -1,11 +1,11 @@
-package com.gemalto.jp2
+package com.andymic.jpeg2k
 
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.core.graphics.createBitmap
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
-import androidx.core.graphics.createBitmap
 
 /**
  * JPEG-2000 bitmap decoder. The supported data formats are: JP2 (standard JPEG-2000 file format) and J2K
@@ -15,19 +15,23 @@ class JP2Decoder {
     open class Header {
         @JvmField
         var width: Int = 0
+
         @JvmField
         var height: Int = 0
+
         @JvmField
         var hasAlpha: Boolean = false
+
         @JvmField
         var numResolutions: Int = 0
+
         @JvmField
         var numQualityLayers: Int = 0
     }
 
     private var data: ByteArray? = null
     private var fileName: String? = null
-    private var `is`: InputStream? = null
+    private var inputStream: InputStream? = null
     private var skipResolutions = 0
     private var layersToDecode = 0
 
@@ -49,11 +53,11 @@ class JP2Decoder {
 
     /**
      * Decode a JPEG-2000 image from a stream.
-     * @param is the stream containing the JPEG-2000 image<br></br>
+     * @param inputStream the stream containing the JPEG-2000 image<br></br>
      * **Note: the whole content of the stream will be read. The end of image data is not detected.**
      */
-    constructor(`is`: InputStream?) {
-        this.`is` = `is`
+    constructor(inputStream: InputStream?) {
+        this.inputStream = inputStream
     }
 
     /**
@@ -69,7 +73,8 @@ class JP2Decoder {
      * @return this instance of `JP2Decoder`
      */
     fun setSkipResolutions(skipResolutions: Int): JP2Decoder {
-        require(skipResolutions >= 0) { "skipResolutions cannot be a negative number!" }
+        if (skipResolutions < 0)
+            throw IllegalArgumentException("skipResolutions cannot be a negative number!")
         this.skipResolutions = skipResolutions
         return this
     }
@@ -84,7 +89,8 @@ class JP2Decoder {
      * @return this instance of `JP2Decoder`
      */
     fun setLayersToDecode(layersToDecode: Int): JP2Decoder {
-        require(layersToDecode >= 0) { "layersToDecode cannot be a negative number!" }
+        if (layersToDecode < 0)
+            throw IllegalArgumentException("layersToDecode cannot be a negative number!")
         this.layersToDecode = layersToDecode
         return this
     }
@@ -97,8 +103,8 @@ class JP2Decoder {
         if (fileName != null) {
             res = decodeJP2File(fileName, skipResolutions, layersToDecode)
         } else {
-            if (data == null && `is` != null) {
-                data = readInputStream(`is`)
+            if (data == null && inputStream != null) {
+                data = readInputStream(inputStream)
             }
             if (data == null) {
                 Log.e(TAG, "Data is null, nothing to decode")
@@ -118,8 +124,8 @@ class JP2Decoder {
         if (fileName != null) {
             res = readJP2HeaderFile(fileName)
         } else {
-            if (data == null && `is` != null) {
-                data = readInputStream(`is`)
+            if (data == null && inputStream != null) {
+                data = readInputStream(inputStream)
             }
             if (data == null) {
                 Log.e(TAG, "Data is null, nothing to decode")
@@ -226,9 +232,11 @@ class JP2Decoder {
 
         //does array1 start with contents of array2?
         private fun startsWith(array1: ByteArray, array2: ByteArray): Boolean {
-            if (array1.size < array2.size) return false
+            if (array1.size < array2.size)
+                return false
             for (i in array2.indices) {
-                if (array1[i] != array2[i]) return false
+                if (array1[i] != array2[i])
+                    return false
             }
             return true
         }

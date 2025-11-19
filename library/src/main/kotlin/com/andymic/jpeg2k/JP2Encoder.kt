@@ -1,4 +1,4 @@
-package com.gemalto.jp2
+package com.andymic.jpeg2k
 
 import android.graphics.Bitmap
 import android.util.Log
@@ -64,7 +64,8 @@ class JP2Encoder(private val bmp: Bitmap) {
      * @return this `JP2Encoder` instance
      */
     fun setNumResolutions(numResolutions: Int): JP2Encoder {
-        require(numResolutions in MIN_RESOLUTIONS..maxResolutions) { "Maximum number of resolutions for this image is between $MIN_RESOLUTIONS and $maxResolutions" }
+        if (numResolutions !in MIN_RESOLUTIONS..maxResolutions)
+            throw IllegalArgumentException("Maximum number of resolutions for this image is between $MIN_RESOLUTIONS and $maxResolutions")
         this.numResolutions = numResolutions
         return this
     }
@@ -97,11 +98,13 @@ class JP2Encoder(private val bmp: Bitmap) {
 
         //check for invalid values
         for (compressionRatio in compressionRatios) {
-            require(!(compressionRatio < 1)) { "compression ratio must be at least 1" }
+            if (compressionRatio < 1)
+                throw IllegalArgumentException("compression ratio must be at least 1")
         }
 
         //check for conflicting settings
-        require(qualityValues == null) { "setCompressionRatios and setQualityValues must not be used together!" }
+        if (qualityValues != null)
+            throw IllegalArgumentException("setCompressionRatios and setQualityValues must not be used together!")
 
         //sort the values and filter out duplicates
         compressionRatios = sort(compressionRatios, false, 1f)!!
@@ -141,11 +144,13 @@ class JP2Encoder(private val bmp: Bitmap) {
 
         //check for invalid values
         for (qualityValue in qualityValues) {
-            require(!(qualityValue < 0)) { "quality values must not be negative" }
+            if ((qualityValue < 0))
+                throw IllegalArgumentException("quality values must not be negative")
         }
 
         //check for conflicting settings
-        require(compressionRatios == null) { "setCompressionRatios and setQualityValues must not be used together!" }
+        if (compressionRatios != null)
+            throw IllegalArgumentException("setCompressionRatios and setQualityValues must not be used together!")
 
         //sort the values and filter out duplicates
         qualityValues = sort(qualityValues, true, 0f)!!
